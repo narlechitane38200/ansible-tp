@@ -15,6 +15,13 @@
     - name: Install docker python
       pip: name=docker-py
   tasks:
+    - name: "Installation paquets git et wget"
+      yum:
+        name:
+          - wget
+          - git
+        state: latest
+      when: ansible_os_family == "CentOS"     
     - name: Create Apache container
       docker_container:
         name: webapp
