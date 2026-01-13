@@ -2,18 +2,29 @@
 - name: "Apache installation using docker"
   hosts: prod
   become: true
+  
   pre_tasks:
-    - name: Install EPEL repo
-      package: name=epel-release state=present
-      when: ansible_distribution == "CentOS"
-    - name: Download pip script
-      get_url:
-        url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
-        dest: /tmp/get-pip.py
-    - name: Install python-pip
-      ansible.builtin.command: python2.7 /tmp/get-pip.py
-    - name: Install docker python
-      pip: name=docker-py
+    - name: Install required system packages
+      yum:
+        name:
+          - epel-release
+          - python3
+          - python3-pip
+          - python3-setuptools
+          - docker
+        state: present
+      when: ansible_os_family == "CentOS"
+
+    - name: Start and enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Docker SDK for Python
+      pip:
+        name: docker
+        
   tasks:
     - name: "Installation paquets git et wget"
       yum:
@@ -22,17 +33,21 @@
           - git
         state: latest
       when: ansible_os_family == "CentOS"
-    - name: Template a file to /etc/file.conf
+      
+    - name: Deploy Apache index.html
       ansible.builtin.template:
         src: index.j2
         dest: /var/www/html/index.html
         owner: admin  
         group: admin
         mode: '0644'
+        
     - name: Create Apache container
       docker_container:
         name: webapp
         image: httpd:2.4
+        state: started
+        restart_policy: always
         ports:
           - "80:80"
         volumes:
