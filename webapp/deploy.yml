@@ -2,7 +2,6 @@
 - name: "Apache installation using docker"
   hosts: prod
   become: true
-  
   pre_tasks:
     - name: Install required system packages
       yum:
@@ -13,35 +12,25 @@
           - python3-setuptools
           - docker
         state: present
-      when: ansible_os_family == "CentOS"
-
-    - name: Start and enable Docker
-      service:
-        name: docker
-        state: started
-        enabled: true
-
+      when: ansible_os_family == "RedHat"
     - name: Install Docker SDK for Python
       pip:
-        name: docker
-        
+        name: docker    
   tasks:
     - name: "Installation paquets git et wget"
       yum:
         name:
           - wget
           - git
-        state: latest
-      when: ansible_os_family == "CentOS"
-      
+        state: present
+      when: ansible_os_family == "RedHat"
     - name: Deploy Apache index.html
       ansible.builtin.template:
         src: index.j2
         dest: /var/www/html/index.html
-        owner: admin  
+        owner: admin
         group: admin
         mode: '0644'
-        
     - name: Create Apache container
       docker_container:
         name: webapp
