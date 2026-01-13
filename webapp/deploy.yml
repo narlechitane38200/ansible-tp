@@ -21,10 +21,19 @@
           - wget
           - git
         state: latest
-      when: ansible_os_family == "CentOS"     
+      when: ansible_os_family == "CentOS"
+    - name: Template a file to /etc/file.conf
+      ansible.builtin.template:
+        src: index.j2
+        dest: /var/www/html/index.html
+        owner: admin  
+        group: admin
+        mode: '0644'
     - name: Create Apache container
       docker_container:
         name: webapp
-        image: httpd
+        image: httpd:2.4
         ports:
           - "80:80"
+        volumes:
+          - /var/www/html:/usr/local/apache2/htdocs
