@@ -3,41 +3,46 @@
   hosts: prod
   become: true
   pre_tasks:
-    - name: Install required system packages
-      yum:
-        name:
-          - epel-release
-          - python3
-          - python3-pip
-          - python3-setuptools
-        state: present
-      when: ansible_os_family == "RedHat"
-    - name: Install Docker SDK for Python
-      pip:
-        name: docker
-        executable: pip3
+    - name: Install EPEL repo
+      package: name=epel-release state=present
+      when: ansible_distribution == "CentOS"
+    - name: Download pip script
+      get_url:
+        url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
+        dest: /tmp/get-pip.py
+    - name: Install python-pip
+      ansible.builtin.command: python2.7 /tmp/get-pip.py
+    - name: Install docker python
+      pip: name=docker-py
   tasks:
-    - name: "Installation paquets git et wget"
-      yum:
-        name:
-          - wget
-          - git
-        state: present
-      when: ansible_os_family == "RedHat"
-    - name: Deploy Apache index.html
-      ansible.builtin.template:
-        src: index.j2
-        dest: /var/www/html/index.html
-        owner: admin
-        group: admin
-        mode: '0644'
-    - name: Create Apache container
-      docker_container:
-        name: webapp
-        image: httpd:2.4
-        state: started
-        restart_policy: always
-        ports:
-          - "80:80"
-        volumes:
-          - /var/www/html:/usr/local/apache2/htdocs
+      - name: "Installation paquets git et wget"
+        yum:
+          name:
+            - wget
+            - git
+          state: present
+        when: ansible_distribution == "CentOS"
+      - name: Create Apache web root
+        file:
+          path: /var/www/html
+          state: directory
+          owner: admin
+          group: admin
+          mode: "0755"
+      - name: Deploy Apache index.html
+        ansible.builtin.template:
+          src: index.html.j2
+          dest: /var/www/html/index.html
+          owner: admin
+          group: admin
+          mode: "0644"
+      - name: Create Apache container
+        docker_container:
+          name: webapp
+          image: httpd:2.4
+          state: started
+          restart_policy: always
+          ports:
+            - "80:80"
+          volumes:
+            - /var/www/html:/usr/local/apache2/htdocs
